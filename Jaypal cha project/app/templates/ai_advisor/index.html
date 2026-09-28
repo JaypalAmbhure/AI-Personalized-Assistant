@@ -1,0 +1,260 @@
+{% extends 'base.html' %}
+
+{% block title %}AI Advisor Hub - FinAura{% endblock %}
+{% block page_title %}AI Financial Advisory Engine{% endblock %}
+{% block page_subtitle %}Generative AI financial planning, overspending diagnostics, and real-time advisory chat{% endblock %}
+
+{% block content %}
+<!-- Financial Health Evaluation Banner -->
+<div class="glass-card mb-4" style="background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.95) 100%); border-left: 4px solid #6366f1;">
+    <div class="row align-items-center g-3">
+        <div class="col-md-3 text-center text-md-start border-end border-secondary border-opacity-10 pe-md-4">
+            <span class="text-dim small fw-bold text-uppercase d-block mb-1">Financial Health Score</span>
+            <div class="d-flex align-items-baseline justify-content-center justify-content-md-start gap-2">
+                <span class="display-5 fw-extrabold text-white">{{ health.total_score }}</span>
+                <span class="text-muted">/ 100</span>
+            </div>
+            <span class="badge badge-soft-{{ health.badge_color }} mt-1 px-3 py-1">{{ health.tier }}</span>
+        </div>
+
+        <div class="col-md-9 ps-md-4">
+            <div class="row g-2 mb-2">
+                <div class="col-6 col-lg-3">
+                    <span class="text-dim small d-block">Savings Rate</span>
+                    <strong class="text-white small">{{ health.components.savings.status }}</strong>
+                    <div class="progress-custom mt-1" style="height: 4px;">
+                        <div class="progress-bar-custom bg-success" style="width: {{ (health.components.savings.score / 25 * 100) }}%;"></div>
+                    </div>
+                </div>
+                <div class="col-6 col-lg-3">
+                    <span class="text-dim small d-block">Budget Adherence</span>
+                    <strong class="text-white small">{{ health.components.budget.status }}</strong>
+                    <div class="progress-custom mt-1" style="height: 4px;">
+                        <div class="progress-bar-custom bg-warning" style="width: {{ (health.components.budget.score / 25 * 100) }}%;"></div>
+                    </div>
+                </div>
+                <div class="col-6 col-lg-3">
+                    <span class="text-dim small d-block">50/30 Balance</span>
+                    <strong class="text-white small">{{ health.components.balance.status }}</strong>
+                    <div class="progress-custom mt-1" style="height: 4px;">
+                        <div class="progress-bar-custom bg-info" style="width: {{ (health.components.balance.score / 25 * 100) }}%;"></div>
+                    </div>
+                </div>
+                <div class="col-6 col-lg-3">
+                    <span class="text-dim small d-block">Emergency Cushion</span>
+                    <strong class="text-white small">{{ health.components.emergency.status }}</strong>
+                    <div class="progress-custom mt-1" style="height: 4px;">
+                        <div class="progress-bar-custom bg-primary" style="width: {{ (health.components.emergency.score / 25 * 100) }}%;"></div>
+                    </div>
+                </div>
+            </div>
+            <p class="text-muted small mb-0"><i class="fa-solid fa-wand-magic-sparkles text-primary me-1"></i> {{ health.summary_text }}</p>
+        </div>
+    </div>
+</div>
+
+<!-- 3 Action Cards for Deep AI Analysis -->
+<div class="row g-4 mb-4">
+    <div class="col-md-4">
+        <div class="glass-card h-100 d-flex flex-column justify-content-between">
+            <div>
+                <div class="d-flex align-items-center gap-2 mb-3">
+                    <div class="metric-icon-box" style="background: rgba(99, 102, 241, 0.15); color: #818cf8;">
+                        <i class="fa-solid fa-chart-pie"></i>
+                    </div>
+                    <h6 class="fw-bold text-white mb-0">50/30/20 Smart Budget</h6>
+                </div>
+                <p class="text-muted small">Generates an optimal category allocation plan based on your income, needs, wants, and risk parameters.</p>
+            </div>
+            <button type="button" class="btn btn-primary-custom w-100 justify-content-center" onclick="triggerAIGeneration('/ai-advisor/api/generate-budget-plan', 'aiLiveOutput', this);">
+                <i class="fa-solid fa-sparkles me-1"></i> Generate Budget Plan
+            </button>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="glass-card h-100 d-flex flex-column justify-content-between">
+            <div>
+                <div class="d-flex align-items-center gap-2 mb-3">
+                    <div class="metric-icon-box" style="background: rgba(239, 68, 68, 0.15); color: #ef4444;">
+                        <i class="fa-solid fa-magnifying-glass-chart"></i>
+                    </div>
+                    <h6 class="fw-bold text-white mb-0">Forensic Spending Audit</h6>
+                </div>
+                <p class="text-muted small">Detects micro-leakages, analyzes recent transactions, flags anomalous spikes, and pinpoints cutbacks.</p>
+            </div>
+            <button type="button" class="btn btn-primary-custom w-100 justify-content-center" onclick="triggerAIGeneration('/ai-advisor/api/analyze-spending', 'aiLiveOutput', this);">
+                <i class="fa-solid fa-microscope me-1"></i> Audit Spending Habts
+            </button>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="glass-card h-100 d-flex flex-column justify-content-between">
+            <div>
+                <div class="d-flex align-items-center gap-2 mb-3">
+                    <div class="metric-icon-box" style="background: rgba(16, 185, 129, 0.15); color: #10b981;">
+                        <i class="fa-solid fa-arrow-trend-up"></i>
+                    </div>
+                    <h6 class="fw-bold text-white mb-0">Wealth & Reserve Strategy</h6>
+                </div>
+                <p class="text-muted small">Evaluates emergency fund months, sequences financial goals, and calculates high-velocity milestones.</p>
+            </div>
+            <button type="button" class="btn btn-primary-custom w-100 justify-content-center" onclick="triggerAIGeneration('/ai-advisor/api/savings-strategy', 'aiLiveOutput', this);">
+                <i class="fa-solid fa-shield-heart me-1"></i> Build Savings Roadmap
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Dynamic AI Generation Output Container -->
+<div id="aiLiveOutput"></div>
+
+<!-- Interactive Chat & History Row -->
+<div class="row g-4">
+    <!-- Chatbot Widget -->
+    <div class="col-lg-7">
+        <div class="glass-card h-100 d-flex flex-column">
+            <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom border-secondary border-opacity-10">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="brand-icon" style="width: 36px; height: 36px; font-size: 1rem;">
+                        <i class="fa-solid fa-robot"></i>
+                    </div>
+                    <div>
+                        <h6 class="fw-bold text-white mb-0">FinAura AI Advisor Chat</h6>
+                        <small class="text-emerald" style="font-size: 0.75rem;"><i class="fa-solid fa-circle" style="font-size: 0.5rem;"></i> Context-Aware Financial Intelligence</small>
+                    </div>
+                </div>
+                <span class="badge badge-soft-indigo small">Gemini / GPT-4o</span>
+            </div>
+
+            <!-- Chat Messages Display -->
+            <div class="chat-container">
+                <div class="chat-messages" id="chatMessages">
+                    <div class="chat-bubble assistant">
+                        Hello <strong>{{ current_user.username }}</strong>! 👋 I am <strong>FinAura</strong>, your dedicated AI Personal Finance Advisor.
+                        <br><br>
+                        I have real-time visibility into your numbers:
+                        <ul class="mb-1 ps-3 mt-1">
+                            <li>Monthly Inflow: <code>{{ summary.total_income | currency(current_user.currency) }}</code></li>
+                            <li>Monthly Burn: <code>{{ summary.total_expenses | currency(current_user.currency) }}</code></li>
+                            <li>Savings Rate: <strong>{{ summary.savings_rate }}%</strong></li>
+                            <li>Financial Health: <strong>{{ health.tier }} ({{ health.total_score }}/100)</strong></li>
+                        </ul>
+                        Ask me anything about trimming expenses, creating a debt strategy, or optimizing your budget!
+                    </div>
+                </div>
+
+                <!-- Quick Suggested Prompts -->
+                <div class="d-flex flex-wrap gap-1 px-3 py-2 border-top border-secondary border-opacity-10">
+                    <button type="button" class="btn btn-sm btn-link text-dim text-decoration-none p-1 small" onclick="sendQuickPrompt('How can I save 15% more this month?');">
+                        💡 Save 15% more
+                    </button>
+                    <button type="button" class="btn btn-sm btn-link text-dim text-decoration-none p-1 small" onclick="sendQuickPrompt('Evaluate my emergency fund buffer');">
+                        🛡️ Emergency buffer check
+                    </button>
+                    <button type="button" class="btn btn-sm btn-link text-dim text-decoration-none p-1 small" onclick="sendQuickPrompt('Is my spending on dining and lifestyle safe?');">
+                        🍔 Lifestyle spending check
+                    </button>
+                </div>
+
+                <!-- Chat Input Form -->
+                <form id="chatForm" class="p-2 border-top border-secondary border-opacity-10">
+                    <div class="input-group">
+                        <input type="text" id="chatInput" class="form-control form-control-custom" placeholder="Ask your personal financial advisor..." required autocomplete="off">
+                        <button class="btn btn-primary-custom" type="submit">
+                            <i class="fa-solid fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Recommendation Log History -->
+    <div class="col-lg-5">
+        <div class="glass-card h-100">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="fw-bold text-white mb-0"><i class="fa-solid fa-clock-rotate-left text-primary me-2"></i>Advisor Audit History</h6>
+                <span class="text-dim small">{{ history|length }} saved</span>
+            </div>
+
+            {% if history %}
+                <div class="d-flex flex-column gap-3 overflow-auto" style="max-height: 480px;">
+                    {% for item in history %}
+                        <div class="p-3 rounded-3" style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-subtle);">
+                            <div class="d-flex justify-content-between align-items-start mb-1">
+                                <strong class="text-white small">{{ item.title }}</strong>
+                                <span class="badge badge-soft-indigo" style="font-size: 0.65rem;">{{ item.created_at.strftime('%b %d, %H:%M') }}</span>
+                            </div>
+                            <div class="text-muted small text-truncate mb-2" style="max-height: 40px;">
+                                {{ item.content | striptags }}
+                            </div>
+                            <button type="button" class="btn btn-sm btn-link text-primary p-0 small text-decoration-none" onclick="viewHistoricalReport({{ item.id }});">
+                                View Full Advice <i class="fa-solid fa-arrow-right ms-1"></i>
+                            </button>
+                            <div id="hist-content-{{ item.id }}" class="d-none">
+                                {{ item.content }}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="text-center py-5 text-muted">
+                    <i class="fa-solid fa-brain fa-3x mb-3 opacity-25"></i>
+                    <p class="small">No audits logged yet. Click any generator above to produce AI financial audits!</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Modal to view full archived report -->
+<div class="modal fade" id="historyModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content modal-content-custom">
+            <div class="modal-header modal-header-custom">
+                <h5 class="modal-title fw-bold text-white" id="historyModalTitle">AI Advisory Archive</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4" id="historyModalBody" style="font-size: 0.95rem; line-height: 1.6;">
+            </div>
+            <div class="modal-footer modal-footer-custom">
+                <button type="button" class="btn btn-secondary-custom" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/ai_chat.js') }}"></script>
+<script>
+function sendQuickPrompt(promptText) {
+    const input = document.getElementById('chatInput');
+    if (input) {
+        input.value = promptText;
+        const form = document.getElementById('chatForm');
+        if (form) form.dispatchEvent(new Event('submit'));
+    }
+}
+
+function viewHistoricalReport(id) {
+    const raw = document.getElementById(`hist-content-${id}`);
+    if (!raw) return;
+
+    let formatted = raw.innerHTML
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/`([^`]+)`/g, '<span class="badge bg-dark text-info">$1</span>')
+        .replace(/^### (.*$)/gim, '<h5 class="fw-bold text-white mt-3 mb-2">$1</h5>')
+        .replace(/^#### (.*$)/gim, '<h6 class="fw-bold text-primary mt-3 mb-1">$1</h6>')
+        .replace(/^\- (.*$)/gim, '<li class="ms-3 mb-1">$1</li>')
+        .replace(/\n\n/g, '<p class="mb-2"></p>')
+        .replace(/\n/g, '<br>');
+
+    document.getElementById('historyModalBody').innerHTML = formatted;
+    const modal = new bootstrap.Modal(document.getElementById('historyModal'));
+    modal.show();
+}
+</script>
+{% endblock %}
+{% endblock %}

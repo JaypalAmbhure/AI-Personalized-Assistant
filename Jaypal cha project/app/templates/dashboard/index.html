@@ -1,0 +1,365 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - FinAura AI Financial Advisor{% endblock %}
+{% block page_title %}Financial Intelligence Dashboard{% endblock %}
+{% block page_subtitle %}Live metrics, budget adherence, spending distribution, and AI insights{% endblock %}
+
+{% block content %}
+<!-- Filter Controls Bar -->
+<div class="glass-card mb-4 py-3">
+    <form method="GET" action="{{ url_for('dashboard.index') }}" class="row g-3 align-items-center">
+        <div class="col-auto">
+            <span class="text-dim small fw-bold text-uppercase"><i class="fa-solid fa-calendar-days me-1 text-primary"></i> Time Horizon:</span>
+        </div>
+        <div class="col-auto">
+            <select name="month" class="form-select form-select-custom form-select-sm" style="width: 140px;">
+                {% for m in range(1, 13) %}
+                    <option value="{{ m }}" {% if m == selected_month %}selected{% endif %}>{{ m|month_name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-auto">
+            <select name="year" class="form-select form-select-custom form-select-sm" style="width: 110px;">
+                {% for y in range(current_year - 2, current_year + 2) %}
+                    <option value="{{ y }}" {% if y == selected_year %}selected{% endif %}>{{ y }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-auto">
+            <button type="submit" class="btn btn-secondary-custom btn-sm">
+                <i class="fa-solid fa-filter me-1"></i> Apply
+            </button>
+        </div>
+        <div class="col text-end d-none d-md-block">
+            <span class="badge badge-soft-indigo me-2">
+                <i class="fa-solid fa-robot me-1"></i> AI Advisory Active
+            </span>
+            <span class="text-muted small">Viewing: <strong>{{ selected_month|month_name }} {{ selected_year }}</strong></span>
+        </div>
+    </form>
+</div>
+
+<!-- 4 Key Metric Cards -->
+<div class="row g-4 mb-4">
+    <!-- Monthly Inflow -->
+    <div class="col-sm-6 col-xl-3">
+        <div class="glass-card metric-card">
+            <div>
+                <div class="metric-header">
+                    <span class="metric-title">Total Inflow</span>
+                    <div class="metric-icon-box" style="background: rgba(16, 185, 129, 0.15); color: #10b981;">
+                        <i class="fa-solid fa-arrow-down-left"></i>
+                    </div>
+                </div>
+                <div class="metric-value">{{ summary.total_income | currency(current_user.currency) }}</div>
+            </div>
+            <div class="metric-sub">
+                <span class="badge badge-soft-emerald">{{ summary.incomes_count }} Records</span>
+                <span class="text-dim">Target: {{ current_user.monthly_income_target | currency(current_user.currency) }}</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Monthly Outflow -->
+    <div class="col-sm-6 col-xl-3">
+        <div class="glass-card metric-card">
+            <div>
+                <div class="metric-header">
+                    <span class="metric-title">Total Outflow</span>
+                    <div class="metric-icon-box" style="background: rgba(239, 68, 68, 0.15); color: #ef4444;">
+                        <i class="fa-solid fa-receipt"></i>
+                    </div>
+                </div>
+                <div class="metric-value">{{ summary.total_expenses | currency(current_user.currency) }}</div>
+            </div>
+            <div class="metric-sub">
+                {% if summary.budget_utilization > 100 %}
+                    <span class="badge badge-soft-rose">{{ summary.budget_utilization }}% of Budget (Over!)</span>
+                {% elif summary.budget_utilization > 0 %}
+                    <span class="badge badge-soft-indigo">{{ summary.budget_utilization }}% of Budget</span>
+                {% else %}
+                    <span class="badge badge-soft-indigo">{{ summary.expenses_count }} Transactions</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Net Cash Flow / Savings -->
+    <div class="col-sm-6 col-xl-3">
+        <div class="glass-card metric-card">
+            <div>
+                <div class="metric-header">
+                    <span class="metric-title">Net Savings</span>
+                    <div class="metric-icon-box" style="background: rgba(99, 102, 241, 0.15); color: #818cf8;">
+                        <i class="fa-solid fa-vault"></i>
+                    </div>
+                </div>
+                <div class="metric-value {% if summary.net_savings < 0 %}text-danger{% else %}text-white{% endif %}">
+                    {{ summary.net_savings | currency(current_user.currency) }}
+                </div>
+            </div>
+            <div class="metric-sub">
+                {% if summary.savings_rate >= 20 %}
+                    <span class="badge badge-soft-emerald"><i class="fa-solid fa-arrow-trend-up me-1"></i>{{ summary.savings_rate }}% Rate (Optimal)</span>
+                {% else %}
+                    <span class="badge badge-soft-amber">{{ summary.savings_rate }}% Rate (Aim for 20%)</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Financial Health Score -->
+    <div class="col-sm-6 col-xl-3">
+        <div class="glass-card metric-card">
+            <div>
+                <div class="metric-header">
+                    <span class="metric-title">Financial Health</span>
+                    <div class="metric-icon-box" style="background: rgba(245, 158, 11, 0.15); color: #f59e0b;">
+                        <i class="fa-solid fa-heart-pulse"></i>
+                    </div>
+                </div>
+                <div class="d-flex align-items-baseline gap-2">
+                    <div class="metric-value">{{ health.total_score }}</div>
+                    <span class="text-dim">/ 100</span>
+                </div>
+            </div>
+            <div class="metric-sub">
+                <span class="badge badge-soft-{{ health.badge_color }}">{{ health.tier }}</span>
+                <span class="text-dim">AI Calculated</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Section -->
+<div class="row g-4 mb-4">
+    <!-- 6-Month Inflow vs Outflow Trend -->
+    <div class="col-lg-8">
+        <div class="glass-card h-100">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                    <h5 class="fw-bold text-white mb-0"><i class="fa-solid fa-chart-column text-primary me-2"></i>Cash Flow Trends</h5>
+                    <small class="text-dim">6-Month historical overview of Inflows, Outflows, and Net Savings</small>
+                </div>
+                <span class="badge badge-soft-indigo">Real-time</span>
+            </div>
+            <div style="height: 300px; position: relative;">
+                <canvas id="trendChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Category Expense Donut Chart -->
+    <div class="col-lg-4">
+        <div class="glass-card h-100">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                    <h5 class="fw-bold text-white mb-0"><i class="fa-solid fa-chart-pie text-emerald me-2"></i>Category Spend</h5>
+                    <small class="text-dim">{{ selected_month|month_name }} Breakdown</small>
+                </div>
+            </div>
+            <div style="height: 300px; position: relative;">
+                <canvas id="categoryChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Middle Section: 50/30/20 & Budgets vs Actual + Savings Goals -->
+<div class="row g-4 mb-4">
+    <!-- Budgets vs Actual Progress -->
+    <div class="col-lg-7">
+        <div class="glass-card h-100">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                    <h5 class="fw-bold text-white mb-0"><i class="fa-solid fa-wallet text-warning me-2"></i>Category Budget Discipline</h5>
+                    <small class="text-dim">Actual spend versus planned ceiling</small>
+                </div>
+                <a href="{{ url_for('budgets.index') }}" class="btn btn-secondary-custom btn-sm">
+                    Manage Budgets <i class="fa-solid fa-arrow-right ms-1"></i>
+                </a>
+            </div>
+
+            {% if summary.category_analytics %}
+                <div class="d-flex flex-column gap-3">
+                    {% for cat in summary.category_analytics[:5] %}
+                    <div>
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <div class="d-flex align-items-center gap-2">
+                                <span style="display:inline-block; width:10px; height:10px; border-radius:50%; background-color: {{ cat.color }};"></span>
+                                <span class="fw-bold text-white small">{{ cat.name }}</span>
+                                {% if cat.is_over %}
+                                    <span class="badge badge-soft-rose" style="font-size: 0.68rem;">Over by {{ cat.over_amount | currency(current_user.currency) }}</span>
+                                {% endif %}
+                            </div>
+                            <div class="small">
+                                <span class="text-white fw-bold">{{ cat.spent | currency(current_user.currency) }}</span>
+                                {% if cat.budgeted > 0 %}
+                                    <span class="text-dim">/ {{ cat.budgeted | currency(current_user.currency) }} ({{ cat.percent_used }}%)</span>
+                                {% else %}
+                                    <span class="text-dim">/ No budget</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="progress-custom">
+                            <div class="progress-bar-custom" style="width: {{ [cat.percent_used, 100]|min }}%; background-color: {% if cat.is_over %}#ef4444{% elif cat.percent_used > 85 %}#f59e0b{% else %}{{ cat.color }}{% endif %};"></div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="text-center py-4 text-muted">
+                    <i class="fa-solid fa-receipt fa-2x mb-2 opacity-25"></i>
+                    <p class="mb-0">No expenses logged for this month.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- 50/30/20 Rule & Savings Goals -->
+    <div class="col-lg-5">
+        <div class="glass-card h-100">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                    <h5 class="fw-bold text-white mb-0"><i class="fa-solid fa-scale-balanced text-info me-2"></i>50/30/20 Allocation</h5>
+                    <small class="text-dim">Needs vs Wants vs Surplus</small>
+                </div>
+                <a href="{{ url_for('savings.index') }}" class="btn btn-secondary-custom btn-sm">
+                    Goals <i class="fa-solid fa-arrow-right ms-1"></i>
+                </a>
+            </div>
+
+            <!-- Mini Needs vs Wants Chart -->
+            <div style="height: 150px; position: relative;" class="mb-3">
+                <canvas id="needsWantsChart"></canvas>
+            </div>
+
+            <!-- Active Savings Goals -->
+            <h6 class="fw-bold text-white small text-uppercase letter-spacing mb-2">Priority Savings Goals</h6>
+            {% if active_goals %}
+                <div class="d-flex flex-column gap-2">
+                    {% for goal in active_goals %}
+                        <div class="p-2 rounded-3" style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-subtle);">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="fw-bold text-white small">{{ goal.title }}</span>
+                                <span class="badge badge-soft-indigo" style="font-size: 0.7rem;">{{ goal.progress_percentage }}%</span>
+                            </div>
+                            <div class="progress-custom" style="height: 6px;">
+                                <div class="progress-bar-custom bg-primary" style="width: {{ goal.progress_percentage }}%;"></div>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center text-dim" style="font-size: 0.75rem;">
+                                <span>{{ goal.current_amount | currency(current_user.currency) }} saved</span>
+                                <span>Target: {{ goal.target_amount | currency(current_user.currency) }}</span>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="text-muted small mb-0">No active savings goals. Create an Emergency Fund goal to build financial security!</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Lower Section: Recent Transactions & AI Recommendation Highlight -->
+<div class="row g-4">
+    <!-- Recent Transactions Table -->
+    <div class="col-lg-8">
+        <div class="glass-card">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                    <h5 class="fw-bold text-white mb-0"><i class="fa-solid fa-list-check text-primary me-2"></i>Recent Transactions</h5>
+                    <small class="text-dim">Latest activity across all payment channels</small>
+                </div>
+                <a href="{{ url_for('expenses.index') }}" class="btn btn-secondary-custom btn-sm">
+                    View All <i class="fa-solid fa-arrow-right ms-1"></i>
+                </a>
+            </div>
+
+            {% if recent_expenses %}
+                <div class="table-responsive">
+                    <table class="custom-table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Category</th>
+                                <th>Description</th>
+                                <th>Method</th>
+                                <th>Class</th>
+                                <th class="text-end">Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for exp in recent_expenses %}
+                            <tr>
+                                <td class="text-muted small">{{ exp.date.strftime('%b %d') }}</td>
+                                <td>
+                                    <span class="badge" style="background-color: {{ exp.category.color if exp.category else '#6366f1' }}22; color: {{ exp.category.color if exp.category else '#6366f1' }}; border: 1px solid {{ exp.category.color if exp.category else '#6366f1' }}44;">
+                                        <i class="fa-solid {{ exp.category.icon if exp.category else 'fa-tag' }} me-1"></i>
+                                        {{ exp.category.name if exp.category else 'General' }}
+                                    </span>
+                                </td>
+                                <td class="fw-bold text-white">{{ exp.description }}</td>
+                                <td class="text-dim small">{{ exp.payment_method }}</td>
+                                <td>
+                                    {% if exp.is_need %}
+                                        <span class="badge badge-soft-emerald" style="font-size: 0.7rem;">Need</span>
+                                    {% else %}
+                                        <span class="badge badge-soft-amber" style="font-size: 0.7rem;">Want</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end fw-bold text-danger">
+                                    -{{ exp.amount | currency(current_user.currency) }}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center py-4 text-muted">
+                    <p class="mb-0">No transactions recorded yet. Use the <strong>Log Expense</strong> button above to get started!</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- AI Advisor Quick Insights -->
+    <div class="col-lg-4">
+        <div class="glass-card h-100">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="fw-bold text-white mb-0">
+                    <i class="fa-solid fa-sparkles text-primary me-2"></i>AI Advisor Insights
+                </h5>
+                <a href="{{ url_for('ai_advisor.index') }}" class="btn btn-primary-custom btn-sm">
+                    Open Hub <i class="fa-solid fa-chevron-right ms-1"></i>
+                </a>
+            </div>
+
+            {% if health.recommendations %}
+                <div class="mb-3">
+                    <span class="text-dim small fw-bold text-uppercase">Actionable Takeaways:</span>
+                    <ul class="list-unstyled mt-2 d-flex flex-column gap-2 mb-0">
+                        {% for rec in health.recommendations[:3] %}
+                            <li class="p-2 rounded-2" style="background: rgba(99, 102, 241, 0.05); border-left: 3px solid #6366f1; font-size: 0.85rem; color: #cbd5e1;">
+                                {{ rec }}
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% endif %}
+
+            <div class="p-3 rounded-3 mt-3" style="background: rgba(30, 41, 59, 0.6); border: 1px solid var(--border-subtle);">
+                <div class="d-flex align-items-center gap-2 mb-1">
+                    <i class="fa-solid fa-robot text-primary"></i>
+                    <span class="fw-bold text-white small">FinAura Instant Audit</span>
+                </div>
+                <p class="text-muted small mb-2">{{ health.summary_text }}</p>
+                <a href="{{ url_for('ai_advisor.index') }}" class="btn btn-secondary-custom btn-sm w-100 justify-content-center">
+                    <i class="fa-solid fa-comment-dots me-1"></i> Chat with AI Advisor
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

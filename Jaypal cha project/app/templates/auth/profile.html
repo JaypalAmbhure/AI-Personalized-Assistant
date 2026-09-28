@@ -1,0 +1,113 @@
+{% extends 'base.html' %}
+
+{% block title %}User Profile & Financial Settings - FinAura{% endblock %}
+{% block page_title %}Financial Profile & Preferences{% endblock %}
+{% block page_subtitle %}Manage your wealth parameters, currency, risk posture, and security{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <!-- Profile & Financial Strategy -->
+    <div class="col-lg-8">
+        <div class="glass-card mb-4">
+            <h5 class="fw-bold mb-3"><i class="fa-solid fa-sliders text-primary me-2"></i>Financial Strategy Parameters</h5>
+            <p class="text-muted small mb-4">These parameters directly configure the AI Advisor's financial health algorithms, emergency fund calculations, and 50/30/20 recommendations.</p>
+
+            <form action="{{ url_for('auth.profile') }}" method="POST">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label text-muted small fw-bold">Username (Read-only)</label>
+                        <input type="text" class="form-control form-control-custom opacity-75" value="{{ current_user.username }}" disabled>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label text-muted small fw-bold">Email Address (Read-only)</label>
+                        <input type="email" class="form-control form-control-custom opacity-75" value="{{ current_user.email }}" disabled>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label text-muted small fw-bold">Currency Symbol</label>
+                        <select name="currency" class="form-select form-select-custom">
+                            <option value="$" {% if current_user.currency == '$' %}selected{% endif %}>$ (USD)</option>
+                            <option value="₹" {% if current_user.currency == '₹' %}selected{% endif %}>₹ (INR)</option>
+                            <option value="€" {% if current_user.currency == '€' %}selected{% endif %}>€ (EUR)</option>
+                            <option value="£" {% if current_user.currency == '£' %}selected{% endif %}>£ (GBP)</option>
+                            <option value="C$" {% if current_user.currency == 'C$' %}selected{% endif %}>C$ (CAD)</option>
+                            <option value="A$" {% if current_user.currency == 'A$' %}selected{% endif %}>A$ (AUD)</option>
+                            <option value="AED" {% if current_user.currency == 'AED' %}selected{% endif %}>AED (Dirham)</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label text-muted small fw-bold">Monthly Target Inflow</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-transparent border-secondary border-opacity-25 text-white fw-bold">{{ current_user.currency }}</span>
+                            <input type="number" step="100" name="monthly_income_target" class="form-control form-control-custom" value="{{ current_user.monthly_income_target }}">
+                        </div>
+                    </div>
+
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label text-muted small fw-bold">Emergency Fund Buffer</label>
+                        <div class="input-group">
+                            <input type="number" min="1" max="24" name="emergency_fund_months" class="form-control form-control-custom" value="{{ current_user.emergency_fund_months }}">
+                            <span class="input-group-text bg-transparent border-secondary border-opacity-25 text-dim small">Months</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label text-muted small fw-bold">Risk Tolerance Profile</label>
+                        <select name="risk_tolerance" class="form-select form-select-custom">
+                            <option value="Conservative" {% if current_user.risk_tolerance == 'Conservative' %}selected{% endif %}>Conservative (Capital preservation, low volatility)</option>
+                            <option value="Moderate" {% if current_user.risk_tolerance == 'Moderate' %}selected{% endif %}>Moderate (Balanced growth & safety buffer)</option>
+                            <option value="Aggressive" {% if current_user.risk_tolerance == 'Aggressive' %}selected{% endif %}>Aggressive (High-growth, maximum savings velocity)</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label text-muted small fw-bold">Primary Financial Milestone / Goal</label>
+                        <input type="text" name="financial_goal" class="form-control form-control-custom" value="{{ current_user.financial_goal }}">
+                    </div>
+                </div>
+
+                <hr class="border-secondary border-opacity-10 my-4">
+
+                <h6 class="fw-bold mb-3"><i class="fa-solid fa-lock text-warning me-2"></i>Change Security Password (Optional)</h6>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label text-muted small fw-bold">New Password</label>
+                        <input type="password" name="new_password" class="form-control form-control-custom" placeholder="Leave blank to keep current">
+                    </div>
+                </div>
+
+                <div class="mt-4">
+                    <button type="submit" class="btn btn-primary-custom">
+                        <i class="fa-solid fa-floppy-disk me-2"></i> Save Profile Settings
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Security & Account Info Side Card -->
+    <div class="col-lg-4">
+        <div class="glass-card mb-4">
+            <h5 class="fw-bold mb-3"><i class="fa-solid fa-shield-halved text-success me-2"></i>Account Security</h5>
+            <ul class="list-unstyled text-muted small mb-0">
+                <li class="mb-2"><i class="fa-solid fa-check text-success me-2"></i> Secure Werkzeug PBKDF2 Password Hashing</li>
+                <li class="mb-2"><i class="fa-solid fa-check text-success me-2"></i> Session Cookie Isolation & HTTP-Only</li>
+                <li class="mb-2"><i class="fa-solid fa-check text-success me-2"></i> Relational Database Isolation per User</li>
+                <li class="mb-2"><i class="fa-solid fa-check text-success me-2"></i> Real-time AI Context Injection</li>
+            </ul>
+        </div>
+
+        <div class="glass-card">
+            <h5 class="fw-bold mb-3"><i class="fa-solid fa-database text-info me-2"></i>Data Management</h5>
+            <p class="text-muted small">Need to export all your recorded financial data for spreadsheet modeling or offline backup?</p>
+            <a href="{{ url_for('reports.export_csv') }}" class="btn btn-secondary-custom w-100 justify-content-center">
+                <i class="fa-solid fa-file-csv me-2 text-success"></i> Export Full Transaction History
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

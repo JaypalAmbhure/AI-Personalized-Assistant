@@ -1,0 +1,230 @@
+{% extends 'base.html' %}
+
+{% block title %}Expenses - FinAura{% endblock %}
+{% block page_title %}Expense Management & Categorization{% endblock %}
+{% block page_subtitle %}Track every transaction, manage custom categories, and monitor Need vs Want ratios{% endblock %}
+
+{% block content %}
+<!-- Top Metrics Row -->
+<div class="row g-4 mb-4">
+    <div class="col-md-4">
+        <div class="glass-card metric-card">
+            <div>
+                <div class="metric-header">
+                    <span class="metric-title">Filtered Outflow</span>
+                    <div class="metric-icon-box" style="background: rgba(239, 68, 68, 0.15); color: #ef4444;">
+                        <i class="fa-solid fa-receipt"></i>
+                    </div>
+                </div>
+                <div class="metric-value text-danger">{{ total_spent | currency(current_user.currency) }}</div>
+            </div>
+            <div class="metric-sub">
+                <span class="text-dim">Total across active filters</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="glass-card metric-card">
+            <div>
+                <div class="metric-header">
+                    <span class="metric-title">Essential Needs (50%)</span>
+                    <div class="metric-icon-box" style="background: rgba(16, 185, 129, 0.15); color: #10b981;">
+                        <i class="fa-solid fa-basket-shopping"></i>
+                    </div>
+                </div>
+                <div class="metric-value">{{ needs_spent | currency(current_user.currency) }}</div>
+            </div>
+            <div class="metric-sub">
+                <span class="badge badge-soft-emerald">
+                    {% if total_spent > 0 %}{{ ((needs_spent / total_spent) * 100)|round(1) }}%{% else %}0%{% endif %} of spend
+                </span>
+                <span class="text-dim">Target: <= 50%</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="glass-card metric-card">
+            <div>
+                <div class="metric-header">
+                    <span class="metric-title">Discretionary Wants (30%)</span>
+                    <div class="metric-icon-box" style="background: rgba(245, 158, 11, 0.15); color: #f59e0b;">
+                        <i class="fa-solid fa-martini-glass"></i>
+                    </div>
+                </div>
+                <div class="metric-value">{{ wants_spent | currency(current_user.currency) }}</div>
+            </div>
+            <div class="metric-sub">
+                <span class="badge badge-soft-amber">
+                    {% if total_spent > 0 %}{{ ((wants_spent / total_spent) * 100)|round(1) }}%{% else %}0%{% endif %} of spend
+                </span>
+                <span class="text-dim">Target: <= 30%</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filter & Search Toolbar -->
+<div class="glass-card mb-4 py-3">
+    <form method="GET" action="{{ url_for('expenses.index') }}" class="row g-2 align-items-center">
+        <div class="col-md-3">
+            <input type="text" name="q" class="form-control form-control-custom form-control-sm" placeholder="Search description..." value="{{ search_q }}">
+        </div>
+        <div class="col-md-2">
+            <select name="category_id" class="form-select form-select-custom form-select-sm">
+                <option value="">All Categories</option>
+                {% for cat in categories %}
+                    <option value="{{ cat.id }}" {% if cat.id == selected_category %}selected{% endif %}>{{ cat.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2">
+            <select name="necessity" class="form-select form-select-custom form-select-sm">
+                <option value="">All Types (Need & Want)</option>
+                <option value="need" {% if selected_necessity == 'need' %}selected{% endif %}>Essential Needs</option>
+                <option value="want" {% if selected_necessity == 'want' %}selected{% endif %}>Discretionary Wants</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <select name="month" class="form-select form-select-custom form-select-sm">
+                <option value="">All Months</option>
+                {% for m in range(1, 13) %}
+                    <option value="{{ m }}" {% if m == selected_month %}selected{% endif %}>{{ m|month_name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-1">
+            <button type="submit" class="btn btn-secondary-custom btn-sm w-100">
+                <i class="fa-solid fa-filter"></i>
+            </button>
+        </div>
+        <div class="col-md-2 text-end">
+            <button type="button" class="btn btn-outline-info btn-sm" data-bs-toggle="modal" data-bs-target="#newCategoryModal">
+                <i class="fa-solid fa-tags me-1"></i> New Category
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- Transactions Table -->
+<div class="glass-card">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="fw-bold text-white mb-0"><i class="fa-solid fa-receipt text-danger me-2"></i>Expense Transactions</h5>
+        <span class="text-dim small">Showing {{ expenses|length }} results</span>
+    </div>
+
+    {% if expenses %}
+        <div class="table-responsive">
+            <table class="custom-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Category</th>
+                        <th>Description</th>
+                        <th>Payment Method</th>
+                        <th>Classification</th>
+                        <th class="text-end">Amount</th>
+                        <th class="text-end">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for exp in expenses %}
+                    <tr>
+                        <td class="text-muted small">{{ exp.date.strftime('%Y-%m-%d') }}</td>
+                        <td>
+                            <span class="badge" style="background-color: {{ exp.category.color if exp.category else '#6366f1' }}22; color: {{ exp.category.color if exp.category else '#6366f1' }}; border: 1px solid {{ exp.category.color if exp.category else '#6366f1' }}44;">
+                                <i class="fa-solid {{ exp.category.icon if exp.category else 'fa-tag' }} me-1"></i>
+                                {{ exp.category.name if exp.category else 'General' }}
+                            </span>
+                        </td>
+                        <td class="fw-bold text-white">{{ exp.description }}</td>
+                        <td class="text-dim small">{{ exp.payment_method }}</td>
+                        <td>
+                            {% if exp.is_need %}
+                                <span class="badge badge-soft-emerald">Need (50%)</span>
+                            {% else %}
+                                <span class="badge badge-soft-amber">Want (30%)</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end fw-bold text-danger">-{{ exp.amount | currency(current_user.currency) }}</td>
+                        <td class="text-end">
+                            <form action="{{ url_for('expenses.delete', id=exp.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete this expense?');">
+                                <button type="submit" class="btn btn-sm btn-link text-danger p-0" title="Delete">
+                                    <i class="fa-solid fa-trash-can"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination Controls -->
+        {% if pagination and pagination.pages > 1 %}
+        <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top border-secondary border-opacity-10">
+            <span class="text-dim small">Page {{ pagination.page }} of {{ pagination.pages }}</span>
+            <div class="d-flex gap-2">
+                {% if pagination.has_prev %}
+                    <a href="{{ url_for('expenses.index', page=pagination.prev_num, q=search_q, category_id=selected_category, necessity=selected_necessity, month=selected_month, year=selected_year) }}" class="btn btn-secondary-custom btn-sm">Previous</a>
+                {% endif %}
+                {% if pagination.has_next %}
+                    <a href="{{ url_for('expenses.index', page=pagination.next_num, q=search_q, category_id=selected_category, necessity=selected_necessity, month=selected_month, year=selected_year) }}" class="btn btn-secondary-custom btn-sm">Next</a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+    {% else %}
+        <div class="text-center py-5 text-muted">
+            <i class="fa-solid fa-receipt fa-3x mb-3 opacity-25"></i>
+            <h5>No Expenses Found</h5>
+            <p class="small">Try adjusting your filters or click "Log Expense" to add a new transaction.</p>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Modal: Create Custom Category -->
+<div class="modal fade" id="newCategoryModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content modal-content-custom">
+            <div class="modal-header modal-header-custom">
+                <h5 class="modal-title fw-bold text-white"><i class="fa-solid fa-tags text-info me-2"></i>Create Custom Category</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="{{ url_for('expenses.add_category') }}" method="POST">
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label text-muted small fw-bold">Category Name</label>
+                        <input type="text" name="name" class="form-control form-control-custom" placeholder="e.g. Pet Care, Gaming, Side-Hustle" required>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted small fw-bold">Icon (FontAwesome)</label>
+                            <select name="icon" class="form-select form-select-custom">
+                                <option value="fa-paw">🐾 Paw / Pets</option>
+                                <option value="fa-gamepad">🎮 Gamepad</option>
+                                <option value="fa-dumbbell">🏋️ Fitness</option>
+                                <option value="fa-plane">✈️ Travel</option>
+                                <option value="fa-book">📚 Books</option>
+                                <option value="fa-music">🎵 Music</option>
+                                <option value="fa-gift">🎁 Gifts</option>
+                                <option value="fa-tag">🏷️ Tag</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted small fw-bold">Tag Color</label>
+                            <input type="color" name="color" class="form-control form-control-color w-100 bg-transparent border-0" value="#8b5cf6">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer modal-footer-custom">
+                    <button type="button" class="btn btn-secondary-custom" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary-custom"><i class="fa-solid fa-check me-1"></i> Save Category</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
